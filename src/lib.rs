@@ -3,7 +3,9 @@ use tracing_subscriber::EnvFilter;
 
 mod cache;
 mod config;
-mod handler;
+mod http;
+mod model;
+mod repo;
 mod service;
 mod state;
 
@@ -41,7 +43,7 @@ pub async fn run() -> anyhow::Result<()> {
 
     let config = init_config().await?;
 
-    handler::run_server(&config).await?;
+    http::run_server(&config).await?;
 
     Ok(())
 }

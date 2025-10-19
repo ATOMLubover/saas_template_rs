@@ -5,6 +5,7 @@ use sea_orm::DatabaseConnection;
 
 use crate::cache::Cache;
 use crate::config::AppConfig;
+use crate::repo::Repository;
 
 /// `AppState` is a cloneable wrapper around `AppStateInner` using `Arc`.
 #[derive(Clone, Debug)]
@@ -13,11 +14,11 @@ pub(crate) struct AppState {
 }
 
 impl AppState {
-    pub fn new(config: AppConfig, database: DatabaseConnection, cache: Cache) -> Self {
+    pub fn new(config: AppConfig, repo: Repository, cache: Cache) -> Self {
         Self {
             inner: Arc::new(AppStateInner {
                 config,
-                database,
+                repo,
                 cache,
             }),
         }
@@ -36,6 +37,6 @@ impl Deref for AppState {
 #[derive(Debug)]
 pub(crate) struct AppStateInner {
     pub config: AppConfig,
-    pub database: DatabaseConnection,
+    pub repo: Repository,
     pub cache: Cache,
 }

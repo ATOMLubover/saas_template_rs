@@ -8,54 +8,16 @@ use tracing::debug;
 mod health;
 mod result;
 
-use crate::cache::Cache;
-use crate::config::AppConfig;
-use crate::repo::Repo;
 use crate::state::AppState;
 
-async fn init_repository() -> anyhow::Result<Repo> {
-    let database = Repo::new()
-        .await
-        .map_err(|err| anyhow::anyhow!("Error when initializing Database connection: {}", err))?;
-
-    database
-        .ping()
-        .await
-        .map_err(|err| anyhow::anyhow!("Error when PING Database: {}", err))?;
-
-    debug!("Database connected");
-
-    Ok(database)
-}
-
-async fn init_cache() -> anyhow::Result<Cache> {
-    let cache =
-        Cache::new().map_err(|err| anyhow::anyhow!("Error when initializing Cache: {}", err))?;
-
-    // Test the Redis with an initial PING command to ensure connectivity
-    cache
-        .ping()
-        .await
-        .map_err(|err| anyhow::anyhow!("Error when PING Redis: {}", err))?;
-
-    debug!("Redis connected");
-
-    Ok(cache)
-}
-
-async fn init_router(app_config: &AppConfig) -> anyhow::Result<Router> {
-    let repo = init_repository().await?;
-    let cache = init_cache().await?;
-
-    let app_state = AppState::new(app_config.clone(), repo, cache);
-
+async fn init_router(app_state: &AppState) -> anyhow::Result<Router> {
     let health_router = Router::new()
         .route("/check", routing::get(health::health_check))
         .route("/app_state", routing::get(health::check_app_state));
 
     let router = Router::new()
         .nest("/health", health_router)
-        .with_state(app_state);
+        .with_state(app_state.clone());
 
     Ok(router)
 }
@@ -84,10 +46,15 @@ async fn signal_term() {
     debug!("SIGNAL TERM received, shutting down gracefully...");
 }
 
-pub async fn run_server(app_config: &AppConfig) -> anyhow::Result<()> {
-    let router = init_router(app_config).await?;
+pub async fn run_server(app_state: &AppState) -> anyhow::Result<()> {
+    // Initialize tokio TCP listener.
+    let server_host = &app_state.config().server_host;
+    let server_port = app_state.config().server_port;
 
-    let listener = bind_addr(&app_config.server_host, app_config.server_port).await?;
+    let listener = bind_addr(server_host, server_port).await?;
+
+    // Initialize make service on router.
+    let router = init_router(app_state).await?;
 
     axum::serve(listener, router)
         .with_graceful_shutdown(signal_term())

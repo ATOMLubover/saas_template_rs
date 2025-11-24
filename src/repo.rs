@@ -1,29 +1,41 @@
+use sqlx::{PgPool, postgres::PgPoolOptions};
 use std::ops::Deref;
 
-use sea_orm::{Database, DatabaseConnection};
-
 #[derive(Debug)]
-pub struct Repository {
-    database: DatabaseConnection,
+pub struct Repo {
+    pool: PgPool,
 }
 
-impl Repository {
+impl Repo {
+    const MAX_CONNECTIONS: u32 = 5;
+
     pub async fn new() -> anyhow::Result<Self> {
         let database_url = std::env::var("DATABASE_URL")
             .map_err(|err| anyhow::anyhow!("Error when acquiring DATABASE_URL: {}", err))?;
 
-        let database = Database::connect(database_url)
+        let pool = PgPoolOptions::new()
+            .max_connections(Self::MAX_CONNECTIONS)
+            .connect(&database_url)
             .await
             .map_err(|err| anyhow::anyhow!("Error when connecting to Database: {}", err))?;
 
-        Ok(Self { database })
+        Ok(Self { pool })
+    }
+
+    pub async fn ping(&self) -> anyhow::Result<()> {
+        sqlx::query("SELECT 1")
+            .execute(&self.pool)
+            .await
+            .map_err(|err| anyhow::anyhow!("Error when PING Database: {}", err))?;
+
+        Ok(())
     }
 }
 
-impl Deref for Repository {
-    type Target = DatabaseConnection;
+impl Deref for Repo {
+    type Target = PgPool;
 
     fn deref(&self) -> &Self::Target {
-        &self.database
+        &self.pool
     }
 }

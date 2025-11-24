@@ -1,10 +1,17 @@
-use crate::service::result::{ServiceResult, succeed};
+use crate::{
+    model::health::HealthCheck,
+    service::result::{ServiceResult, succeed},
+};
 
-pub async fn health_check() -> ServiceResult<String> {
-    // Add some dependency checks here if needed in the future.
+pub async fn health_check() -> ServiceResult<HealthCheck> {
+    let heath_check = HealthCheck {
+        healthy: true,
+        status: "OK".to_string(),
+        comment: "Service is running smoothly.".to_string(),
+    };
 
     Ok(succeed()
         .with_message("Pong from server.")
         .with_code(200)
-        .with_data("A test payload".to_string()))
+        .with_data(heath_check))
 }

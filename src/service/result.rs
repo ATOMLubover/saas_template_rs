@@ -12,8 +12,10 @@ where
 
 #[derive(Debug, Error)]
 pub enum ServiceError {
+    #[error("Redis error: {0}")]
+    RedisError(#[from] redis::RedisError),
     #[error("Database error: {0}")]
-    DatabaseError(#[from] sea_orm::DbErr),
+    DatabaseError(#[from] sqlx::Error),
 }
 
 #[derive(Debug, Serialize)]

@@ -35,6 +35,11 @@ where
 {
     fn from(err: ServiceError) -> Self {
         match err {
+            ServiceError::RedisError(_) => HttpResult {
+                code: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
+                message: None,
+                data: None,
+            },
             ServiceError::DatabaseError(_) => HttpResult {
                 code: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
                 message: None,

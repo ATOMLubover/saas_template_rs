@@ -1,11 +1,9 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
-use sea_orm::DatabaseConnection;
-
 use crate::cache::Cache;
 use crate::config::AppConfig;
-use crate::repo::Repository;
+use crate::repo::Repo;
 
 /// `AppState` is a cloneable wrapper around `AppStateInner` using `Arc`.
 #[derive(Clone, Debug)]
@@ -14,7 +12,7 @@ pub(crate) struct AppState {
 }
 
 impl AppState {
-    pub fn new(config: AppConfig, repo: Repository, cache: Cache) -> Self {
+    pub fn new(config: AppConfig, repo: Repo, cache: Cache) -> Self {
         Self {
             inner: Arc::new(AppStateInner {
                 config,
@@ -23,20 +21,24 @@ impl AppState {
             }),
         }
     }
-}
 
-impl Deref for AppState {
-    type Target = AppStateInner;
+    pub fn config(&self) -> &AppConfig {
+        &self.inner.config
+    }
 
-    fn deref(&self) -> &Self::Target {
-        &self.inner
+    pub fn repo(&self) -> &Repo {
+        &self.inner.repo
+    }
+
+    pub fn cache(&self) -> &Cache {
+        &self.inner.cache
     }
 }
 
 /// `AppStateInner` has not to be Clone because `AppState` is the one being cloned.
 #[derive(Debug)]
-pub(crate) struct AppStateInner {
+pub struct AppStateInner {
     pub config: AppConfig,
-    pub repo: Repository,
+    pub repo: Repo,
     pub cache: Cache,
 }

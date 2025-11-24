@@ -2,10 +2,11 @@ use axum::extract::State;
 use axum::http::StatusCode;
 
 use crate::http::result::HttpResult;
+use crate::model::health::HealthCheck;
 use crate::service;
 use crate::state::AppState;
 
-pub async fn health_check() -> HttpResult<String> {
+pub async fn health_check() -> HttpResult<HealthCheck> {
     service::health_check().await.into()
 }
 

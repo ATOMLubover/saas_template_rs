@@ -10,11 +10,11 @@ mod result;
 
 use crate::cache::Cache;
 use crate::config::AppConfig;
-use crate::repo::Repository;
+use crate::repo::Repo;
 use crate::state::AppState;
 
-async fn init_repository() -> anyhow::Result<Repository> {
-    let database = Repository::new()
+async fn init_repository() -> anyhow::Result<Repo> {
+    let database = Repo::new()
         .await
         .map_err(|err| anyhow::anyhow!("Error when initializing Database connection: {}", err))?;
 
@@ -34,7 +34,7 @@ async fn init_cache() -> anyhow::Result<Cache> {
 
     // Test the Redis with an initial PING command to ensure connectivity
     cache
-        .ping_remote()
+        .ping()
         .await
         .map_err(|err| anyhow::anyhow!("Error when PING Redis: {}", err))?;
 

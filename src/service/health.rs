@@ -1,6 +1,6 @@
 use crate::{
     model::health::HealthCheck,
-    service::result::{ServiceResult, succeed},
+    service::result::{ServiceResult, accept},
 };
 
 pub async fn health_check() -> ServiceResult<HealthCheck> {
@@ -10,8 +10,7 @@ pub async fn health_check() -> ServiceResult<HealthCheck> {
         comment: "Service is running smoothly.".to_string(),
     };
 
-    Ok(succeed()
+    Ok(accept()
         .with_message("Pong from server.")
-        .with_code(200)
         .with_data(heath_check))
 }

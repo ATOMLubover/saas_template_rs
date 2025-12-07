@@ -1,5 +1,3 @@
-mod health;
-mod result;
-
-pub use health::*;
-pub use result::*;
+pub mod health;
+pub mod result;
+pub mod user;

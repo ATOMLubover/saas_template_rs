@@ -1,5 +1,6 @@
 use sqlx::{PgPool, postgres::PgPoolOptions};
-use std::ops::Deref;
+
+pub mod user;
 
 #[derive(Debug)]
 pub struct Repo {
@@ -17,25 +18,18 @@ impl Repo {
             .max_connections(Self::MAX_CONNECTIONS)
             .connect(&database_url)
             .await
-            .map_err(|err| anyhow::anyhow!("Error when connecting to Database: {}", err))?;
+            .map_err(|err| anyhow::anyhow!("Error when connecting to database: {}", err))?;
 
         Ok(Self { pool })
     }
 
     pub async fn ping(&self) -> anyhow::Result<()> {
-        sqlx::query("SELECT 1")
-            .execute(&self.pool)
-            .await
-            .map_err(|err| anyhow::anyhow!("Error when PING Database: {}", err))?;
+        sqlx::query("SELECT 1").execute(&self.pool).await?;
 
         Ok(())
     }
-}
 
-impl Deref for Repo {
-    type Target = PgPool;
-
-    fn deref(&self) -> &Self::Target {
+    pub fn pool(&self) -> &PgPool {
         &self.pool
     }
 }

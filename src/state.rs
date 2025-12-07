@@ -3,21 +3,23 @@ use std::sync::Arc;
 
 use crate::cache::Cache;
 use crate::config::AppConfig;
+use crate::jwt_codec::JwtCodec;
 use crate::repo::Repo;
 
 /// `AppState` is a cloneable wrapper around `AppStateInner` using `Arc`.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(crate) struct AppState {
     inner: Arc<AppStateInner>,
 }
 
 impl AppState {
-    pub fn new(config: AppConfig, repo: Repo, cache: Cache) -> Self {
+    pub fn new(config: AppConfig, repo: Repo, cache: Cache, jwt_codec: JwtCodec) -> Self {
         Self {
             inner: Arc::new(AppStateInner {
                 config,
                 repo,
                 cache,
+                jwt_codec,
             }),
         }
     }
@@ -33,12 +35,16 @@ impl AppState {
     pub fn cache(&self) -> &Cache {
         &self.inner.cache
     }
+
+    pub fn jwt_codec(&self) -> &JwtCodec {
+        &self.inner.jwt_codec
+    }
 }
 
 /// `AppStateInner` has not to be Clone because `AppState` is the one being cloned.
-#[derive(Debug)]
 pub struct AppStateInner {
-    pub config: AppConfig,
-    pub repo: Repo,
-    pub cache: Cache,
+    config: AppConfig,
+    repo: Repo,
+    cache: Cache,
+    jwt_codec: JwtCodec,
 }

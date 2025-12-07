@@ -1,6 +1,7 @@
 use serde::Serialize;
+use utoipa::ToSchema;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct HealthCheck {
     pub healthy: bool,
     pub status: String,

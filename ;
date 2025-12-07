@@ -2,7 +2,7 @@ use std::net::SocketAddrV4;
 
 use axum::Router;
 use axum::middleware::from_fn_with_state;
-use axum::routing::{self, get, post};
+use axum::routing;
 use tokio::net::TcpListener;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -10,18 +10,13 @@ use utoipa_swagger_ui::SwaggerUi;
 mod health;
 mod middleware;
 mod result;
-mod user;
 
 use crate::http::middleware::authorization::authorization_middleware;
 use crate::openapi::OpenApiDoc;
 use crate::state::AppState;
 
 async fn init_router(app_state: &AppState) -> anyhow::Result<Router> {
-    let health_router = Router::new().route("/check", get(health::health_check));
-
-    let user_router = Router::new()
-        .route("/login", post(user::login_user))
-        .route("/{user_id}/profile", get(user::get_user_profile));
+    let health_router = Router::new().route("/check", routing::get(health::health_check));
 
     let document_router =
         SwaggerUi::new("/docs/swagger-ui").url("/docs/openapi.json", OpenApiDoc::openapi());
@@ -35,8 +30,6 @@ async fn init_router(app_state: &AppState) -> anyhow::Result<Router> {
         ));
 
     let router = Router::new()
-        // NOTE: At current stage, we do not wrap user routes with authorization middleware.
-        .nest("/user", user_router)
         .nest("/api", api_router)
         .with_state(app_state.clone());
 

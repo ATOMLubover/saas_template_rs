@@ -1,10 +1,11 @@
-use axum::http::StatusCode;
 use axum::response::IntoResponse;
+use axum::{Json, http::StatusCode};
 use serde::Serialize;
+use utoipa::ToSchema;
 
-use crate::service::{ServiceError, ServiceResult};
+use crate::service::result::{ServiceError, ServiceResult};
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct HttpResult<T>
 where
     T: Serialize,
@@ -34,17 +35,28 @@ where
     T: Serialize,
 {
     fn from(err: ServiceError) -> Self {
+        // For trae level only, we log the error internally but do not expose it to clients.
+        tracing::trace!("ServiceError encountered: {}", err);
+
+        // We never expose internal error details to clients.
         match err {
-            ServiceError::RedisError(_) => HttpResult {
-                code: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
-                message: None,
-                data: None,
-            },
-            ServiceError::DatabaseError(_) => HttpResult {
-                code: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
-                message: None,
-                data: None,
-            },
+            ServiceError::Generic { code, message } => HttpResult::new(
+                StatusCode::from_u16(code).unwrap_or(StatusCode::BAD_REQUEST),
+                Some(message),
+                None,
+            ),
+            ServiceError::JwtCodec(_) => {
+                HttpResult::new(StatusCode::INTERNAL_SERVER_ERROR, None, None)
+            }
+            ServiceError::PasswordHash(_) => {
+                HttpResult::new(StatusCode::INTERNAL_SERVER_ERROR, None, None)
+            }
+            ServiceError::Cache(_) => {
+                HttpResult::new(StatusCode::INTERNAL_SERVER_ERROR, None, None)
+            }
+            ServiceError::Database(_) => {
+                HttpResult::new(StatusCode::INTERNAL_SERVER_ERROR, None, None)
+            }
         }
     }
 }
@@ -54,6 +66,7 @@ where
     T: Serialize,
 {
     fn from(service_result: ServiceResult<T>) -> Self {
+        // Only log in debug level to avoid cluttering logs.
         match service_result {
             Ok(value) => HttpResult {
                 code: value.code,
@@ -70,10 +83,10 @@ where
     T: Serialize,
 {
     fn into_response(self) -> axum::response::Response {
-        let status_code =
-            StatusCode::from_u16(self.code).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
-        let body = axum::Json(self);
+        let status = StatusCode::from_u16(self.code).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
 
-        (status_code, body).into_response()
+        let body = Json(self);
+
+        (status, body).into_response()
     }
 }

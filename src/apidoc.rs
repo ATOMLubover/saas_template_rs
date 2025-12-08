@@ -5,7 +5,7 @@ mod user;
 #[derive(utoipa::OpenApi)]
 #[openapi(
     nest(
-        (path = "/", api = health::HealthApiDoc),
+        (path = "/check", api = health::HealthApiDoc),
         (path = "/api/users", api = user::UserApiDoc),
         (path = "/auth", api = auth::AuthApiDoc),
     ),

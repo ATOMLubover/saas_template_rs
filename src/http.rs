@@ -18,7 +18,7 @@ use crate::http::middleware::authorization::authorization_middleware;
 use crate::state::AppState;
 
 async fn init_router(app_state: &AppState) -> anyhow::Result<Router> {
-    let health_router = Router::new().route("/check", get(health::health_check));
+    let health_router = Router::new().route("/health", get(health::health_check));
 
     let user_router = Router::new().route("/{user_id}", get(user::get_user));
 
@@ -35,7 +35,7 @@ async fn init_router(app_state: &AppState) -> anyhow::Result<Router> {
 
     let router = Router::new()
         .merge(doc_router)
-        .nest("/health", health_router)
+        .nest("/check", health_router)
         .nest("/auth", auth_router)
         .nest("/api", api_router)
         .with_state(app_state.clone());

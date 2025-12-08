@@ -8,10 +8,10 @@ pub struct Cache {
 impl Cache {
     pub fn new() -> anyhow::Result<Self> {
         let redis_url = std::env::var("REDIS_URL")
-            .map_err(|err| anyhow::anyhow!("Error when acquiring REDIS_URL: {}", err))?;
+            .map_err(|e| anyhow::anyhow!("Error when acquiring REDIS_URL: {}", e))?;
 
         let client = Client::open(redis_url.as_str())
-            .map_err(|err| anyhow::anyhow!("Error when connecting to Redis: {}", err))?;
+            .map_err(|e| anyhow::anyhow!("Error when connecting to Redis: {}", e))?;
 
         Ok(Self { client })
     }

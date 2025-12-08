@@ -12,13 +12,13 @@ impl Repo {
 
     pub async fn new() -> anyhow::Result<Self> {
         let database_url = std::env::var("DATABASE_URL")
-            .map_err(|err| anyhow::anyhow!("Error when acquiring DATABASE_URL: {}", err))?;
+            .map_err(|e| anyhow::anyhow!("Error when acquiring DATABASE_URL: {}", e))?;
 
         let pool = PgPoolOptions::new()
             .max_connections(Self::MAX_CONNECTIONS)
             .connect(&database_url)
             .await
-            .map_err(|err| anyhow::anyhow!("Error when connecting to database: {}", err))?;
+            .map_err(|e| anyhow::anyhow!("Error when connecting to database: {}", e))?;
 
         Ok(Self { pool })
     }

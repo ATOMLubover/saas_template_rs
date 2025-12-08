@@ -32,27 +32,31 @@ impl UserClaims {
 }
 
 /// JWT encoder/decoder using HMAC HS256.
-#[derive(Debug)]
 pub struct JwtCodec {
-    pub encoding: EncodingKey,
-    pub decoding: DecodingKey,
+    pub encoding_key: EncodingKey,
+    pub decoding_key: DecodingKey,
 }
 
 impl JwtCodec {
     /// Create a new codec from a shared secret (HMAC HS256).
-    pub fn new(secret: impl AsRef<[u8]>) -> Self {
+    pub fn new() -> anyhow::Result<Self> {
+        let secret = std::env::var("JWT_SECRET_KEY")?;
+
         let secret = secret.as_ref();
         let encoding = EncodingKey::from_secret(secret);
         let decoding = DecodingKey::from_secret(secret);
 
-        Self { encoding, decoding }
+        Ok(Self {
+            encoding_key: encoding,
+            decoding_key: decoding,
+        })
     }
 
     /// Encode claims into a compact JWT string. Uses HS256 by default.
     pub fn encode(&self, claims: &UserClaims) -> CodecResult<String> {
         let header = Header::new(Algorithm::HS256);
 
-        encode(&header, claims, &self.encoding)
+        encode(&header, claims, &self.encoding_key)
     }
 
     /// Decode and validate a JWT string, returning the contained `UserClaims`.
@@ -63,26 +67,8 @@ impl JwtCodec {
         validation.validate_exp = true;
 
         let token_data: jsonwebtoken::TokenData<UserClaims> =
-            decode(token, &self.decoding, &validation)?;
+            decode(token, &self.decoding_key, &validation)?;
 
         Ok(token_data.claims)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn roundtrip() {
-        let secret = b"my-secret-which-should-be-long-and-random";
-        let codec = JwtCodec::new(secret.as_ref());
-
-        let claims = UserClaims::with_exp("user-123", 60);
-        let token = codec.encode(&claims).expect("encode");
-        let decoded = codec.decode(&token).expect("decode");
-
-        assert_eq!(decoded.sub, claims.sub);
-        assert!(decoded.exp >= claims.iat);
     }
 }

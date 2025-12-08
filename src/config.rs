@@ -4,8 +4,7 @@ use serde::Deserialize;
 pub struct AppConfig {
     pub server_host: String,
     pub server_port: u16,
-    pub jwt_secret_key: String,
-    pub jwt_expiration_seconds: usize,
+    pub jwt_exp_seconds: usize,
 }
 
 impl AppConfig {
@@ -13,10 +12,10 @@ impl AppConfig {
         let path = path.unwrap_or("app_config.json");
 
         let content = std::fs::read_to_string(path)
-            .map_err(|err| anyhow::anyhow!("Error when reading config file {}: {}", path, err))?;
+            .map_err(|e| anyhow::anyhow!("Error when reading config file {}: {}", path, e))?;
 
         let config: AppConfig = serde_json::from_str(&content)
-            .map_err(|err| anyhow::anyhow!("Error when parsing config file {}: {}", path, err))?;
+            .map_err(|e| anyhow::anyhow!("Error when parsing config file {}: {}", path, e))?;
 
         Ok(config)
     }

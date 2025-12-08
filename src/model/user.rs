@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use utoipa::ToSchema;
 
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct GetUserArgs {
     pub user_id: String,
 }
@@ -15,7 +15,7 @@ pub struct GetUserReply {
     pub created_at: OffsetDateTime,
 }
 
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct LoginUserArgs {
     pub email: String,
     pub nickname: String,

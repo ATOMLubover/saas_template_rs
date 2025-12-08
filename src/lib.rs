@@ -1,11 +1,11 @@
 use tracing_subscriber::EnvFilter;
 
+mod apidoc;
 mod cache;
 mod config;
 mod http;
 mod jwt_codec;
 mod model;
-mod openapi;
 mod repo;
 mod result_trace;
 mod service;
@@ -14,7 +14,7 @@ mod state;
 use crate::{cache::Cache, config::AppConfig, jwt_codec::JwtCodec, repo::Repo, state::AppState};
 
 async fn init_env() -> anyhow::Result<()> {
-    dotenvy::dotenv().map_err(|err| anyhow::anyhow!("Error when loading env: {}", err))?;
+    dotenvy::dotenv().map_err(|e| anyhow::anyhow!("Error when loading env: {}", e))?;
 
     tracing::debug!("Environment variables loaded from .env file");
 
@@ -31,26 +31,31 @@ async fn init_logger() {
 
 async fn init_config() -> anyhow::Result<AppConfig> {
     let config = AppConfig::try_from_file(None)
-        .map_err(|err| anyhow::anyhow!("Error when loading config: {}", err))?;
+        .map_err(|e| anyhow::anyhow!("Error when loading config: {}", e))?;
 
     tracing::debug!("Configuration loaded: {:?}", config);
 
     Ok(config)
 }
 
-fn init_jwt_codec(secret_key: &str) -> JwtCodec {
-    JwtCodec::new(secret_key)
+fn init_jwt_codec() -> anyhow::Result<JwtCodec> {
+    let jwt_codec =
+        JwtCodec::new().map_err(|e| anyhow::anyhow!("Error when initializing JWT codec: {}", e))?;
+
+    tracing::debug!("JWT codec initialized");
+
+    Ok(jwt_codec)
 }
 
 async fn init_repo() -> anyhow::Result<Repo> {
     let database = Repo::new()
         .await
-        .map_err(|err| anyhow::anyhow!("Error when initializing repo: {}", err))?;
+        .map_err(|e| anyhow::anyhow!("Error when initializing repo: {}", e))?;
 
     database
         .ping()
         .await
-        .map_err(|err| anyhow::anyhow!("Error when PING repo: {}", err))?;
+        .map_err(|e| anyhow::anyhow!("Error when PING repo: {}", e))?;
 
     tracing::debug!("Repo connected");
 
@@ -59,13 +64,13 @@ async fn init_repo() -> anyhow::Result<Repo> {
 
 async fn init_cache() -> anyhow::Result<Cache> {
     let cache =
-        Cache::new().map_err(|err| anyhow::anyhow!("Error when initializing cache: {}", err))?;
+        Cache::new().map_err(|e| anyhow::anyhow!("Error when initializing cache: {}", e))?;
 
     // Test the Redis with an initial PING command to ensure connectivity
     cache
         .ping()
         .await
-        .map_err(|err| anyhow::anyhow!("Error when PING cache: {}", err))?;
+        .map_err(|e| anyhow::anyhow!("Error when PING cache: {}", e))?;
 
     tracing::debug!("Redis connected");
 
@@ -79,7 +84,7 @@ pub async fn run() -> anyhow::Result<()> {
 
     let config = init_config().await?;
 
-    let jwt_codec = init_jwt_codec(&config.jwt_secret_key);
+    let jwt_codec = init_jwt_codec()?;
 
     let cache = init_cache().await?;
 

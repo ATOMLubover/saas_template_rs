@@ -12,14 +12,14 @@ where
     ServiceValue::<T>::default()
 }
 
-pub(super) fn reject<T, M>(message: M) -> ServiceValue<T>
+pub(super) fn reject<M>(code: u16, message: M) -> ServiceError
 where
-    T: Serialize,
     M: Into<String>,
 {
-    ServiceValue::<T>::default()
-        .with_code(400)
-        .with_message(message)
+    ServiceError::Generic {
+        code,
+        message: message.into(),
+    }
 }
 
 #[derive(Debug, Error)]

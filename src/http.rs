@@ -2,41 +2,41 @@ use std::net::SocketAddrV4;
 
 use axum::Router;
 use axum::middleware::from_fn_with_state;
-use axum::routing::{self, get, post};
+use axum::routing::{get, post};
 use tokio::net::TcpListener;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-mod health;
-mod middleware;
-mod result;
-mod user;
+pub mod auth;
+pub mod health;
+pub mod middleware;
+pub mod result;
+pub mod user;
 
+use crate::apidoc::ApiDoc;
 use crate::http::middleware::authorization::authorization_middleware;
-use crate::openapi::OpenApiDoc;
 use crate::state::AppState;
 
 async fn init_router(app_state: &AppState) -> anyhow::Result<Router> {
     let health_router = Router::new().route("/check", get(health::health_check));
 
-    let user_router = Router::new()
-        .route("/login", post(user::login_user))
-        .route("/{user_id}/profile", get(user::get_user_profile));
-
-    let document_router =
-        SwaggerUi::new("/docs/swagger-ui").url("/docs/openapi.json", OpenApiDoc::openapi());
+    let user_router = Router::new().route("/{user_id}", get(user::get_user));
 
     let api_router = Router::new()
-        .nest("health", health_router)
-        .merge(document_router)
+        .nest("/users", user_router)
         .route_layer(from_fn_with_state(
             app_state.clone(),
             authorization_middleware,
         ));
 
+    let auth_router = Router::new().route("/login", post(auth::login_user));
+
+    let doc_router = SwaggerUi::new("/docs").url("/api-docs/openapi.json", ApiDoc::openapi());
+
     let router = Router::new()
-        // NOTE: At current stage, we do not wrap user routes with authorization middleware.
-        .nest("/user", user_router)
+        .merge(doc_router)
+        .nest("/health", health_router)
+        .nest("/auth", auth_router)
         .nest("/api", api_router)
         .with_state(app_state.clone());
 
@@ -46,11 +46,11 @@ async fn init_router(app_state: &AppState) -> anyhow::Result<Router> {
 async fn bind_addr(host: &str, port: u16) -> anyhow::Result<TcpListener> {
     let addr: SocketAddrV4 = format!("{}:{}", host, port)
         .parse()
-        .map_err(|err| anyhow::anyhow!("Error when parsing listening address: {}", err))?;
+        .map_err(|e| anyhow::anyhow!("Error when parsing listening address: {}", e))?;
 
     let listener = TcpListener::bind(&addr)
         .await
-        .map_err(|err| anyhow::anyhow!("Error when binding to address {}: {}", addr, err))?;
+        .map_err(|e| anyhow::anyhow!("Error when binding to address {}: {}", addr, e))?;
 
     tracing::debug!("Server now listening on {}", addr);
 
@@ -80,7 +80,7 @@ pub async fn run_server(app_state: &AppState) -> anyhow::Result<()> {
     axum::serve(listener, router)
         .with_graceful_shutdown(signal_term())
         .await
-        .map_err(|err| anyhow::anyhow!("Error running server: {}", err))?;
+        .map_err(|e| anyhow::anyhow!("Error running server: {}", e))?;
 
     Ok(())
 }

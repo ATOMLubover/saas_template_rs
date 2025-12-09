@@ -12,7 +12,7 @@ pub mod authorization {
 
     use crate::{result_trace::ResultTrace as _, state::AppState};
 
-    pub async fn authorization_middleware(
+    pub async fn authorize_middleware(
         State(state): State<AppState>,
         TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
         mut request: Request,

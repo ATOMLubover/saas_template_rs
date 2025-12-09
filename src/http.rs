@@ -14,7 +14,7 @@ pub mod result;
 pub mod user;
 
 use crate::apidoc::ApiDoc;
-use crate::http::middleware::authorization::authorization_middleware;
+use crate::http::middleware::authorization::authorize_middleware;
 use crate::state::AppState;
 
 async fn init_router(app_state: &AppState) -> anyhow::Result<Router> {
@@ -24,10 +24,7 @@ async fn init_router(app_state: &AppState) -> anyhow::Result<Router> {
 
     let api_router = Router::new()
         .nest("/users", user_router)
-        .route_layer(from_fn_with_state(
-            app_state.clone(),
-            authorization_middleware,
-        ));
+        .route_layer(from_fn_with_state(app_state.clone(), authorize_middleware));
 
     let auth_router = Router::new().route("/login", post(auth::login_user));
 

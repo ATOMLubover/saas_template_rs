@@ -41,9 +41,15 @@ async fn init_router(app_state: &AppState) -> anyhow::Result<Router> {
 }
 
 async fn bind_addr(host: &str, port: u16) -> anyhow::Result<TcpListener> {
-    let addr: SocketAddrV4 = format!("{}:{}", host, port)
-        .parse()
-        .map_err(|e| anyhow::anyhow!("Error when parsing listening address: {}", e))?;
+    let host = host.parse().map_err(|e| {
+        anyhow::anyhow!(
+            "Error when parsing listening host address '{}': {}",
+            host,
+            e
+        )
+    })?;
+
+    let addr: SocketAddrV4 = SocketAddrV4::new(host, port);
 
     let listener = TcpListener::bind(&addr)
         .await
